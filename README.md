@@ -1,2 +1,6 @@
-# text-tools
-Set of online text tools useful for web development
+# Text Tools
+Set of online text tools useful for web development. Includes:
+ - URI encoding/decoding
+ - Base64 encoding/decoding
+ - HTML escaping/unescaping
+ - JSON viewer
