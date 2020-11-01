@@ -4,3 +4,4 @@ Set of online text tools useful for web development. Includes:
  - Base64 encoding/decoding
  - HTML escaping/unescaping
  - JSON viewer
+ - JWT viewer
