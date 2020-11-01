@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Text Tools" />
+    <meta name="keywords" content="JSON, JSON viewer, URL encode, URL decode, HTML encode, HTML decode, online" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
+      integrity="sha512-NhSC1YmyruXifcj/KFRWoC561YpHpc5Jtzgvbuzx5VozKpWvQ+4nXhPdFgmx8xqexRcpAglTj9sIBWINXa8x5w=="
+      crossorigin="anonymous"
+    />
+    <title>Text Tools</title>
+    <style>
+      :root {
+        --text-color-dark: #eeeeee;
+        --text-color-light: #333;
+        --text-color: var(--text-color-light);
+
+        --back-color-dark: #222;
+        --back-color-light: #fff;
+        --back-color: var(--back-color-light);
+
+        --menu-color-back-dark: #454545;
+        --menu-color-back-light: #efefef;
+        --menu-color-back: #efefef;
+
+        --menu-border-color-dark: #777;
+        --menu-border-color-light: #333;
+        --menu-border-color: var(--menu-border-color-light);
+
+        --button-back-color-light: #dddddd;
+        --button-back-color-dark: #666666;
+        --button-back-color: var(--button-back-color-light);
+
+        --tree-view-expand-collapse-color: #aa44aa;
+        --string-value-color: #cc3333;
+        --number-value-color: #6666ff;
+        --boolean-value-color: #44aa33;
+      }
+
+      body {
+        font-family: arial;
+        color: var(--text-color);
+        font-size: 16px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--back-color);
+      }
+
+      menu {
+        display: flex;
+        align-items: center;
+        background-color: var(--menu-color-back);
+        margin: 0;
+        padding: 0;
+        flex-wrap: wrap;
+        border-bottom: 1px solid var(--menu-border-color);
+      }
+
+      menu > li {
+        list-style-type: none;
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        white-space: nowrap;
+        text-transform: capitalize;
+      }
+
+      menu > li > button {
+        padding: 0;
+        margin: -2px;
+      }
+
+      menu > li > #font-size-input {
+        margin: -1px;
+        border: 1px solid;
+        padding: 0;
+        width: 2.1rem;
+      }
+
+      label > input {
+        margin-right: 0.25rem;
+      }
+
+      main {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      main > textarea {
+        flex-grow: 1;
+        border: 0;
+        padding: 0.25rem;
+        background-color: var(--back-color);
+        color: var(--text-color);
+      }
+
+      main > textarea:focus {
+        outline: none;
+      }
+
+      .tree-view {
+        padding: 0.25rem 0 0.25rem 1rem;
+        list-style-type: none;
+        margin: 0;
+      }
+
+      .tree-view-node.expanded::before {
+        content: '- ';
+        font-family: monospace;
+        color: var(--tree-view-expand-collapse-color);
+      }
+
+      .tree-view-node.collapsed::before {
+        content: '+ ';
+        font-family: monospace;
+        color: var(--tree-view-expand-collapse-color);
+      }
+
+      .tree-view-node.expanded + li {
+        display: '';
+      }
+
+      .tree-view-node.collapsed + li {
+        display: none;
+      }
+
+      .string-value {
+        color: var(--string-value-color);
+      }
+
+      .number-value {
+        color: var(--number-value-color);
+      }
+
+      .boolean-value {
+        color: var(--boolean-value-color);
+      }
+    </style>
+  </head>
+  <body>
+    <template id="viewer-type-elem-template">
+      <li>
+        <label><input type="radio" name="viewer-type-radio" /></label>
+      </li>
+    </template>
+    <menu>
+      <li>
+        <button id="uri-encode-btn">URI encode</button>
+      </li>
+      <li>
+        <button id="uri-decode-btn">URI decode</button>
+      </li>
+      <li>
+        <button id="base64-encode-btn">Base64 encode</button>
+      </li>
+      <li>
+        <button id="base64-decode-btn">Base64 decode</button>
+      </li>
+      <li>
+        <button id="html-escape-btn">HTML escape</button>
+      </li>
+      <li>
+        <button id="html-unescape-btn">HTML unescape</button>
+      </li>
+      <li>
+        <input type="number" id="font-size-input" />
+      </li>
+      <li>
+        <label><input type="checkbox" id="dark-theme-checkbox" />Dark</label>
+      </li>
+    </menu>
+    <main></main>
+
+    <script>
+      function isPrimitive(o) {
+        return o !== new Object(o);
+      }
+
+      function objectsAreOfSameShape(o1, o2) {
+        if (typeof o1 !== typeof o2) return false;
+
+        if (isPrimitive(o1)) return true;
+
+        if (Object.keys(o1).sort().toString() !== Object.keys(o2).sort().toString()) return false;
+
+        for (const prop in o1) {
+          if (!objectsAreOfSameShape(o1[prop], o2[prop])) return false;
+        }
+
+        return true;
+      }
+
+      function proxyDeep(obj, handler) {
+        if (isPrimitive(obj)) return obj;
+
+        for (const p in obj) {
+          obj[p] = proxyDeep(obj[p], handler);
+        }
+
+        return new Proxy(obj, {
+          ...handler,
+          set: function (target, prop, value, receiver) {
+            const valueProxy = proxyDeep(value, handler);
+            return handler.set(target, prop, valueProxy, receiver);
+          },
+        });
+      }
+
+      function autoPersistProxy(createDefault, nameForStorage) {
+        function load() {
+          const json = localStorage.getItem(nameForStorage);
+          return json !== null ? JSON.parse(json) : null;
+        }
+
+        function loadOrCreateDefault() {
+          const loadedValue = load();
+          const defaultValue = createDefault();
+          return loadedValue === null || !objectsAreOfSameShape(loadedValue, defaultValue) ? defaultValue : loadedValue;
+        }
+
+        function save(obj) {
+          localStorage.setItem(nameForStorage, JSON.stringify(obj));
+        }
+
+        const obj = loadOrCreateDefault();
+        return proxyDeep(obj, {
+          set: function () {
+            const r = Reflect.set(...arguments);
+            save(obj);
+            return r;
+          },
+        });
+      }
+
+      function escapeHtml(value) {
+        return value
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function unescapeHtml(value) {
+        return value
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&amp;/g, '&');
+      }
+
+      function createTreeView(data) {
+        const treeViewElem = document.createElement('ul');
+        treeViewElem.className = 'tree-view';
+        for (let i = 0; i < data.length; i++) {
+          const value = data[i];
+          const nodeElem = document.createElement('li');
+          nodeElem.className = 'tree-view-node';
+          const isChildTreeView = Array.isArray(value);
+          if (isChildTreeView) {
+            const childTreeView = createTreeView(value);
+            nodeElem.appendChild(childTreeView);
+          } else {
+            nodeElem.innerHTML = value.toString();
+          }
+
+          const hasChildren = Array.isArray(data[i + 1]);
+
+          if (!isChildTreeView) nodeElem.classList.add('expanded');
+
+          const isExpandable = hasChildren && !isChildTreeView;
+          if (isExpandable) {
+            nodeElem.addEventListener('click', function () {
+              nodeElem.classList.toggle('collapsed');
+              nodeElem.classList.toggle('expanded');
+            });
+          }
+
+          treeViewElem.appendChild(nodeElem);
+        }
+        return treeViewElem;
+      }
+
+      function objectToTreeViewData(object) {
+        const data = [];
+        for (var prop in object) {
+          const value = object[prop];
+          const isPrimitiveLike = isPrimitive(value) || value instanceof Date;
+
+          if (isPrimitiveLike) {
+            const cssClass = (value instanceof Date ? 'string' : typeof value) + '-value';
+            const isStringLike = value instanceof Date || typeof value === 'string';
+            const valueString = isStringLike ? '"' + value.toString() + '"' : value.toString();
+            data.push(prop + ': ' + '<span class="' + cssClass + '">' + valueString + '<span>');
+          } else {
+            data.push(prop + ':');
+            const childTreeData = objectToTreeViewData(value);
+            data.push(childTreeData);
+          }
+        }
+
+        return data;
+      }
+
+      function createTextViewer(onValueChanged, onError) {
+        const elem = document.createElement('textarea');
+        elem.placeholder = 'Enter text here...';
+        elem.value = localStorage.getItem('text');
+        elem.addEventListener('change', function () {
+          onValueChanged(elem.value);
+        });
+
+        function transformValue(transform) {
+          const indexStart = elem.selectionStart;
+          const indexEnd = elem.selectionEnd;
+          const isSelection = indexStart !== indexEnd;
+          const value = isSelection ? elem.value.substring(indexStart, indexEnd) : elem.value;
+
+          let transformedValue = value;
+          try {
+            transformedValue = transform(value);
+          } catch (e) {
+            console.error(e);
+          }
+
+          elem.value = isSelection
+            ? elem.value.substring(0, indexStart) + transformedValue + elem.value.substring(indexEnd)
+            : transformedValue;
+
+          if (isSelection) {
+            elem.focus();
+            elem.selectionStart = indexStart;
+            elem.selectionEnd = indexStart + transformedValue.length;
+          }
+
+          onValueChanged(elem.value);
+        }
+
+        function trySetValue(value) {
+          elem.value = value;
+          return true;
+        }
+
+        return {
+          elem,
+          transformValue,
+          trySetValue,
+        };
+      }
+
+      function createJsonViewer(onValueChanged, onError) {
+        const elem = document.createElement('div');
+
+        function trySetValue(value, withErrorNotification) {
+          elem.innerHTML = '';
+          let obj = undefined;
+          try {
+            obj = JSON.parse(value);
+          } catch (e) {
+            if (withErrorNotification) {
+              console.error(e);
+              onError('Invalid JSON.');
+            }
+            return false;
+          }
+
+          const treeViewData = objectToTreeViewData(obj);
+          const treeView = createTreeView(treeViewData);
+          elem.appendChild(treeView);
+          return true;
+        }
+
+        return { elem, trySetValue };
+      }
+
+      function initToolBar(settings, text, toolbarContainer, viewersContainer, viewers) {
+        function onFontSizeChange() {
+          viewersContainer.style.fontSize = settings.font.size.value + 'px';
+        }
+
+        function initFontSizeControl() {
+          const fontSizeInput = document.getElementById('font-size-input');
+          fontSizeInput.value = settings.font.size.value;
+          fontSizeInput.min = settings.font.size.min;
+          fontSizeInput.max = settings.font.size.max;
+          fontSizeInput.addEventListener('change', function (e) {
+            const value = parseInt(e.target.value);
+            let coercedValue = undefined;
+            if (isNaN(value)) coercedValue = settings.font.size.value;
+            else if (value < e.target.min) coercedValue = settings.font.size.min;
+            else if (value > e.target.max) coercedValue = settings.font.size.max;
+
+            if (coercedValue !== undefined) e.target.value = coercedValue.toString();
+
+            settings.font.size.value = coercedValue !== undefined ? coercedValue : value;
+            onFontSizeChange();
+          });
+
+          onFontSizeChange();
+        }
+
+        function onViewerTypeChanged(type, viewerTypeRadios) {
+          const valueIsSet = viewers[type].trySetValue(text.value, true);
+          if (valueIsSet) {
+            viewers[settings.viewer.type].hide();
+            viewers[type].show();
+            settings.viewer.type = type;
+            textTransformButtons.forEach((btn) => (btn.disabled = type !== 'text'));
+          } else {
+            viewerTypeRadios[settings.viewer.type].checked = true;
+          }
+        }
+
+        function createViewerTypeElems() {
+          const template = document.getElementById('viewer-type-elem-template');
+          const radios = {};
+          const viewerTypeElems = Object.keys(viewers).map((type) => {
+            const elem = template.content.firstElementChild.cloneNode(true);
+            const radio = elem.querySelector('input');
+            radio.value = type;
+            radio.checked = type === settings.viewer.type;
+            radio.addEventListener('change', function () {
+              onViewerTypeChanged(type, radios);
+            });
+            radios[type] = radio;
+            const label = elem.querySelector('label');
+            label.appendChild(document.createTextNode(type));
+            return elem;
+          });
+
+          return viewerTypeElems;
+        }
+
+        function initTextTransformButton(btnId, transform) {
+          const btn = document.getElementById(btnId);
+          btn.addEventListener('click', function () {
+            viewers.text.transformValue(transform);
+          });
+          return btn;
+        }
+
+        function onThemChange(theme) {
+          const root = document.documentElement;
+          const colorVars = ['--text-color', '--back-color', '--menu-color-back', '--menu-border-color-light'];
+          colorVars.forEach((c) => root.style.setProperty(c, getComputedStyle(root).getPropertyValue(c + '-' + theme)));
+        }
+
+        function initThemeSwitcher() {
+          const darkThemeCheckbox = document.getElementById('dark-theme-checkbox');
+          darkThemeCheckbox.checked = settings.theme === 'dark';
+          darkThemeCheckbox.addEventListener('change', function (e) {
+            const theme = e.target.checked ? 'dark' : 'light';
+            settings.theme = theme;
+            onThemChange(theme);
+          });
+        }
+
+        const viewerTypeElems = createViewerTypeElems();
+        viewerTypeElems.reverse().forEach((e) => toolbarContainer.insertBefore(e, toolbarContainer.firstChild));
+
+        initFontSizeControl();
+        initThemeSwitcher();
+        onThemChange(settings.theme);
+
+        const btnIdToTextTransformMap = {
+          'uri-encode-btn': encodeURIComponent,
+          'uri-decode-btn': decodeURIComponent,
+          'base64-encode-btn': btoa,
+          'base64-decode-btn': atob,
+          'html-escape-btn': escapeHtml,
+          'html-unescape-btn': unescapeHtml,
+        };
+
+        const textTransformButtons = Object.keys(btnIdToTextTransformMap).map((btnId) =>
+          initTextTransformButton(btnId, btnIdToTextTransformMap[btnId])
+        );
+        textTransformButtons.forEach((btn) => (btn.disabled = settings.viewer.type !== 'text'));
+      }
+
+      const settings = autoPersistProxy(function () {
+        return {
+          font: {
+            size: { value: 20, min: 2, max: 99 },
+          },
+          theme: 'light',
+          viewer: { type: 'text' },
+        };
+      }, 'settings');
+
+      const text = autoPersistProxy(function () {
+        return {
+          value: '',
+        };
+      }, 'text');
+
+      const viewerCreators = {
+        text: createTextViewer,
+        json: createJsonViewer,
+      };
+
+      function onError(e) {
+        alert(e);
+      }
+
+      const viewers = {};
+      Object.keys(viewerCreators).forEach((c) => {
+        const v = viewerCreators[c]((value) => (text.value = value), onError);
+        v.trySetValue(text.value);
+        v.hide = function () {
+          v.elem.style.display = 'none';
+        };
+        v.show = function () {
+          v.elem.style.display = '';
+        };
+        v.hide();
+        viewers[c] = v;
+      });
+      viewers[settings.viewer.type].show();
+
+      const viewersContainer = document.getElementsByTagName('main')[0];
+      const toolbarContainer = document.getElementsByTagName('menu')[0];
+      Object.values(viewers).forEach((viewer) => viewersContainer.appendChild(viewer.elem));
+      initToolBar(settings, text, toolbarContainer, viewersContainer, viewers);
+    </script>
+  </body>
+</html>
