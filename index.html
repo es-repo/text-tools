@@ -367,8 +367,7 @@
             obj = JSON.parse(value);
           } catch (e) {
             if (withErrorNotification) {
-              console.error(e);
-              onError('Invalid JSON.');
+              onError('Invalid JSON.', e);
             }
             return false;
           }
@@ -554,8 +553,9 @@
         jwt: createJwtViewer,
       };
 
-      function onError(e) {
-        alert(e);
+      function onError(msg, ex) {
+        alert(msg);
+        if (ex) console.error(ex); 
       }
 
       const viewers = {};
