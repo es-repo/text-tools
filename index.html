@@ -427,6 +427,49 @@
         return { elem, trySetValue };
       }
 
+      function createUrlViewer() {
+        const elem = document.createElement('div');
+
+        function urlToUrlPropsObject(url){
+          const obj = {
+            scheme: url.protocol.replace(':', ''),
+            host: url.host,
+            port: url.port,
+            path: url.pathname,
+            query: {},
+            fragment: url.hash,
+          };
+
+          for (const p of new URLSearchParams(url.search)) {
+            obj.query[p[0]] = p[1];
+          }
+          
+          for (const p in obj) {
+            if (obj[p] === '' || (!isPrimitive(obj[p]) && Object.keys(obj[p]).length === 0)) delete obj[p];
+          }
+
+          return obj;
+        }
+
+        function trySetValue(value, withErrorNotification) {
+          elem.innerHTML = '';
+          try{
+            const url = new URL(value);
+            const urlProps = urlToUrlPropsObject(url);
+            const treeViewData = objectToTreeViewData(urlProps);
+            const treeView = createTreeView(treeViewData);
+            elem.appendChild(treeView); 
+            return true;
+          }
+          catch(e) {
+            if (withErrorNotification) onError('Invalid URL.', e);
+            return false;
+          }
+        }
+
+        return {elem, trySetValue};
+      }
+
       function initToolBar(settings, text, toolbarContainer, viewersContainer, viewers) {
         function onFontSizeChange() {
           viewersContainer.style.fontSize = settings.font.size.value + 'px';
@@ -551,6 +594,7 @@
         text: createTextViewer,
         json: createJsonViewer,
         jwt: createJwtViewer,
+        url: createUrlViewer,
       };
 
       function onError(msg, ex) {
