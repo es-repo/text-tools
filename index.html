@@ -505,12 +505,12 @@
         function onViewerTypeChanged(type, viewerTypeRadios) {
           const valueIsSet = viewers[type].trySetValue(text.value, true);
           if (valueIsSet) {
-            viewers[settings.viewer.type].hide();
+            viewers[text.type].hide();
             viewers[type].show();
-            settings.viewer.type = type;
+            text.type = type;
             textTransformButtons.forEach((btn) => (btn.disabled = type !== 'text'));
           } else {
-            viewerTypeRadios[settings.viewer.type].checked = true;
+            viewerTypeRadios[text.type].checked = true;
           }
         }
 
@@ -521,7 +521,7 @@
             const elem = template.content.firstElementChild.cloneNode(true);
             const radio = elem.querySelector('input');
             radio.value = type;
-            radio.checked = type === settings.viewer.type;
+            radio.checked = type === text.type;
             radio.addEventListener('change', function () {
               onViewerTypeChanged(type, radios);
             });
@@ -577,7 +577,7 @@
         const textTransformButtons = Object.keys(btnIdToTextTransformMap).map((btnId) =>
           initTextTransformButton(btnId, btnIdToTextTransformMap[btnId])
         );
-        textTransformButtons.forEach((btn) => (btn.disabled = settings.viewer.type !== 'text'));
+        textTransformButtons.forEach((btn) => (btn.disabled = text.type !== 'text'));
       }
 
       const settings = autoPersistProxy(function () {
@@ -585,16 +585,14 @@
           font: {
             size: { value: 20, min: 2, max: 99 },
           },
-          theme: 'light',
-          viewer: { type: 'text' },
+          theme: 'light'
         };
       }, 'settings');
 
-      const text = autoPersistProxy(function () {
-        return {
+      const text = {
           value: '',
+          type: 'text'
         };
-      }, 'text');
 
       const viewerCreators = {
         text: createTextViewer,
@@ -622,7 +620,7 @@
         v.hide();
         viewers[c] = v;
       });
-      viewers[settings.viewer.type].show();
+      viewers[text.type].show();
 
       const viewersContainer = document.getElementsByTagName('main')[0];
       const toolbarContainer = document.getElementsByTagName('menu')[0];
