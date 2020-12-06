@@ -10,6 +10,7 @@
       integrity="sha512-NhSC1YmyruXifcj/KFRWoC561YpHpc5Jtzgvbuzx5VozKpWvQ+4nXhPdFgmx8xqexRcpAglTj9sIBWINXa8x5w=="
       crossorigin="anonymous"
     />
+    <link rel="shortcut icon" href="favicon.ico" />
     <title>Text Tools</title>
     <style>
       :root {
@@ -181,7 +182,11 @@
       <li>
         <label><input type="checkbox" id="dark-theme-checkbox" />Dark</label>
       </li>
-      <li><a href="https://github.com/es-repo/text-tools" target="_blank"><img src="images/github-icon.svg" class="social-icon"></a></li>
+      <li>
+        <a href="https://github.com/es-repo/text-tools" target="_blank"
+          ><img src="images/github-icon.svg" class="social-icon"
+        /></a>
+      </li>
     </menu>
     <main></main>
 
@@ -436,7 +441,7 @@
       function createUrlViewer() {
         const elem = document.createElement('div');
 
-        function urlToUrlPropsObject(url){
+        function urlToUrlPropsObject(url) {
           const obj = {
             scheme: url.protocol.replace(':', ''),
             host: url.host,
@@ -449,7 +454,7 @@
           for (const p of new URLSearchParams(url.search)) {
             obj.query[p[0]] = p[1];
           }
-          
+
           for (const p in obj) {
             if (obj[p] === '' || (!isPrimitive(obj[p]) && Object.keys(obj[p]).length === 0)) delete obj[p];
           }
@@ -459,21 +464,20 @@
 
         function trySetValue(value, withErrorNotification) {
           elem.innerHTML = '';
-          try{
+          try {
             const url = new URL(value);
             const urlProps = urlToUrlPropsObject(url);
             const treeViewData = objectToTreeViewData(urlProps);
             const treeView = createTreeView(treeViewData);
-            elem.appendChild(treeView); 
+            elem.appendChild(treeView);
             return true;
-          }
-          catch(e) {
+          } catch (e) {
             if (withErrorNotification) onError('Invalid URL.', e);
             return false;
           }
         }
 
-        return {elem, trySetValue};
+        return { elem, trySetValue };
       }
 
       function initToolBar(settings, text, toolbarContainer, viewersContainer, viewers) {
@@ -585,14 +589,14 @@
           font: {
             size: { value: 20, min: 2, max: 99 },
           },
-          theme: 'light'
+          theme: 'light',
         };
       }, 'settings');
 
       const text = {
-          value: '',
-          type: 'text'
-        };
+        value: '',
+        type: 'text',
+      };
 
       const viewerCreators = {
         text: createTextViewer,
@@ -603,7 +607,7 @@
 
       function onError(msg, ex) {
         alert(msg);
-        if (ex) console.error(ex); 
+        if (ex) console.error(ex);
       }
 
       const viewers = {};
