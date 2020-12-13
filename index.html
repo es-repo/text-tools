@@ -11,6 +11,7 @@
       crossorigin="anonymous"
     />
     <link rel="shortcut icon" href="favicon.ico" />
+    <script src="https://unpkg.com/json5@^2.0.0/dist/index.min.js"></script>
     <title>Text Tools</title>
     <style>
       :root {
@@ -375,7 +376,7 @@
           elem.innerHTML = '';
           let obj = undefined;
           try {
-            obj = JSON.parse(value);
+            obj = JSON5.parse(value);
           } catch (e) {
             if (withErrorNotification) {
               onError(e);
