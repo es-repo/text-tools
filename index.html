@@ -378,7 +378,7 @@
             obj = JSON.parse(value);
           } catch (e) {
             if (withErrorNotification) {
-              onError('Invalid JSON.', e);
+              onError(e);
             }
             return false;
           }
@@ -431,7 +431,7 @@
             }
           }
 
-          if (withErrorNotification) onError('Invalid JWT.');
+          if (withErrorNotification) onError('Invalid JWT');
           return false;
         }
 
@@ -472,7 +472,7 @@
             elem.appendChild(treeView);
             return true;
           } catch (e) {
-            if (withErrorNotification) onError('Invalid URL.', e);
+            if (withErrorNotification) onError(e);
             return false;
           }
         }
@@ -605,9 +605,10 @@
         url: createUrlViewer,
       };
 
-      function onError(msg, ex) {
-        alert(msg);
-        if (ex) console.error(ex);
+      function onError(e) {
+        const msgToShow = (e.message || e.toString()) + '.';
+        alert(msgToShow);
+        if (e) console.error(e);
       }
 
       const viewers = {};
