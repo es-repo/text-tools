@@ -52,6 +52,7 @@
         --string-value-color: #cc5533;
         --number-value-color: #6666ff;
         --boolean-value-color: #44aa33;
+        --null-value-color: #7d8d9d;
       }
 
       body {
@@ -157,6 +158,10 @@
 
       .boolean-value {
         color: var(--boolean-value-color);
+      }
+
+      .null-value {
+        color: var(--null-value-color);
       }
 
       .social-icon {
@@ -317,14 +322,15 @@
 
       function objectToTreeViewData(object) {
         const data = [];
+
         for (var prop in object) {
           const value = object[prop];
           const isPrimitiveLike = isPrimitive(value) || value instanceof Date;
 
           if (isPrimitiveLike) {
-            const cssClass = (value instanceof Date ? 'string' : typeof value) + '-value';
+            const cssClass = (value instanceof Date ? 'string' : value === null ? 'null' : typeof value) + '-value';
             const isStringLike = value instanceof Date || typeof value === 'string';
-            const valueString = isStringLike ? '"' + value.toString() + '"' : value.toString();
+            const valueString = value === null ? 'null' : isStringLike ? '"' + value.toString() + '"' : value.toString();
             data.push(prop + ': ' + '<span class="' + cssClass + '">' + valueString + '<span>');
           } else {
             data.push(prop + ':');
